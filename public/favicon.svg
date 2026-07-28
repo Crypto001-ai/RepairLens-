@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#10B981"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="url(#bg)"/>
+  
+  <!-- Lens Outer Ring -->
+  <circle cx="15" cy="17" r="7" stroke="#FFFFFF" stroke-width="2" opacity="0.95"/>
+  <!-- Lens Inner Aperture -->
+  <circle cx="15" cy="17" r="3" fill="#FFFFFF"/>
+  
+  <!-- Lens Handle / Wrench Accent -->
+  <path d="M10.5 21.5L6.5 25.5" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
+  
+  <!-- AI Sparkle Top Right -->
+  <path d="M23 4.5C23 6.985 25.015 9 27.5 9C25.015 9 23 11.015 23 13.5C23 11.015 20.985 9 18.5 9C20.985 9 23 6.985 23 4.5Z" fill="#A7F3D0"/>
+</svg>

@@ -1,0 +1,75 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #0A0F1E;
+  --bg-surface: #111827;
+  --bg-card: #1A2035;
+  --color-primary: #6366F1;
+  --color-accent: #10B981;
+  --text-primary: #F9FAFB;
+  --text-secondary: #9CA3AF;
+  --text-muted: #6B7280;
+  --border: rgba(99, 102, 241, 0.15);
+  --border-bright: rgba(99, 102, 241, 0.4);
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-secondary);
+}
+
+/* Scroll Animations */
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.5s ease-out, 
+              transform 0.5s ease-out;
+}
+
+.animate-on-scroll.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.animate-on-scroll.from-left {
+  transform: translateX(-30px);
+}
+
+.animate-on-scroll.from-right {
+  transform: translateX(30px);
+}
+
+.animate-on-scroll.scale-up {
+  transform: scale(0.95);
+}
+
+.animate-on-scroll.scale-up.visible {
+  transform: scale(1);
+}
+
+.animate-on-scroll.from-left.visible,
+.animate-on-scroll.from-right.visible {
+  transform: translateX(0);
+}
+
+.animate-on-scroll.delay-100 {
+  transition-delay: 100ms;
+}
+
+.animate-on-scroll.delay-200 {
+  transition-delay: 200ms;
+}
+
+.animate-on-scroll.delay-300 {
+  transition-delay: 300ms;
+}
+
+.animate-on-scroll.delay-400 {
+  transition-delay: 400ms;
+}
+
+.animate-on-scroll.delay-500 {
+  transition-delay: 500ms;
+}

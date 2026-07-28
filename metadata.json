@@ -1,0 +1,10 @@
+{
+  "name": "Remix RepairLens AI",
+  "description": "AI-powered household appliance diagnostic \u0026 repair assistant. See it. Diagnose it. Fix it.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

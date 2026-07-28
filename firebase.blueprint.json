@@ -1,0 +1,48 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profile",
+      "description": "User account profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "repairs": {
+      "title": "Repair Record",
+      "description": "User diagnostic and repair records",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "applianceType": { "type": "string" },
+        "status": { "type": "string" },
+        "estimatedCostSavings": { "type": "number" },
+        "techFeeAvoidedNaira": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userId"]
+    },
+    "repair_sessions": {
+      "title": "Active Repair Session",
+      "description": "Real-time active repair session state",
+      "type": "object",
+      "properties": {
+        "repairSessionId": { "type": "string" },
+        "userId": { "type": "string" },
+        "status": { "type": "string" },
+        "currentStep": { "type": "number" },
+        "completedSteps": { "type": "array" },
+        "progressPercentage": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["repairSessionId", "userId", "status"]
+    }
+  }
+}
