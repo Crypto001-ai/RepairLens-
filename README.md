@@ -1,8 +1,8 @@
-**RepairLens AI**
+🔗 **RepairLens AI**
 
 Repair with confidence using AI guidance.
 
-**Overview**
+🔗 **Overview**
 
 RepairLens AI is a web application that helps people diagnose and repair household appliances with the support of Google's Gemma 4 model.
 
@@ -10,13 +10,13 @@ Users can upload a photo, describe a fault, or combine both to receive an AI-ass
 
 The goal is to make appliance repair more accessible, reduce unnecessary replacement of working devices, and help people save money through practical AI assistance.
 
-**The Problem**
+🔗 **The Problem**
 
 Many people throw away or replace household appliances because they do not know what is wrong or where to begin fixing them. Professional repair services may not always be available, affordable, or convenient. Existing online repair guides are often generic, difficult to follow, or unrelated to the exact problem a user is experiencing.
 
 As a result, usable appliances become electronic waste, households spend more money than necessary, and simple repairs are often left undone.
 
-**Our Solution**
+🔗 **Our Solution**
 
 RepairLens AI provides a guided repair experience powered by Google's Gemma 4 model.
 
@@ -27,7 +27,7 @@ Users can pause a repair at any time and continue later without losing their pro
 By combining multimodal AI, session continuity, and practical repair guidance, RepairLens AI makes repairing household appliances more approachable, more reliable, and easier to complete with confidence.
 
 
-**Key Features**
+🔗 **Key Features**
 
 
 **AI Powered Diagnosis**
@@ -62,7 +62,7 @@ Users earn achievements as they complete repairs, encouraging learning and build
 
 The dashboard highlights active repair sessions, recent activity, achievements, and quick access to start a new diagnosis or continue an unfinished repair.
 
-**How It Works**
+🔗 **How It Works**
 
 RepairLens AI guides users through a simple repair workflow.
 
@@ -98,13 +98,13 @@ RepairLens AI guides users through a simple repair workflow.
           Repair Reports & Progress
 ```
 
-**Why Gemma 4?**
+🔗 **Why Gemma 4?**
 
 RepairLens AI is built around Google's Gemma 4 model because the application depends on more than a simple question and answer chatbot.
 Gemma helps users analyze appliance problems from images and text, explains repair steps in simple language, remembers the current repair session, answers follow up questions without losing context, and adapts its guidance as users upload additional photos during a repair.
 This allows RepairLens AI to provide an interactive repair experience rather than a one time diagnosis.
 
-**Architecture**
+🔗 **Architecture**
 
 RepairLens AI follows a simple cloud based architecture.
 The user signs in and starts a new repair session.
@@ -139,7 +139,7 @@ RepairLens-AI/
 🔗 **Getting Started**
 Follow these steps to run RepairLens AI locally.
 
-**Prerequisites**
+🔗 **Prerequisites**
 
 Before you begin, make sure you have:
 • Node.js 20 or later
@@ -147,7 +147,7 @@ Before you begin, make sure you have:
 • A Firebase project
 • Access to the Google AI Studio API
 
-**Installation**
+🔗 **Installation**
 
 Clone the repository.
 
@@ -161,7 +161,7 @@ Install project dependencies.
 
 ```npm install```
 
-**Environment Variables**
+🔗 **Environment Variables**
 
 Create a .env file in the project root and add the required environment variables.
 
@@ -176,7 +176,7 @@ VITE_FIREBASE_APP_ID=
 GEMINI_API_KEY=
 
 ```
-**Running the Application**
+🔗 **Running the Application**
 
 Start the development server.
 
@@ -186,7 +186,7 @@ The application will be available in your browser at:
 
 ```http://localhost:5173```
 
-**Building for Production**
+🔗 **Building for Production**
 
 To create a production build, run:
 
