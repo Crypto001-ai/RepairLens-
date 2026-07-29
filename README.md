@@ -215,3 +215,74 @@ Many appliance problems are easier to explain with both images and text. RepairL
 **User Focused Explanations**
 
 RepairLens AI explains repair steps in clear language that is suitable for beginners while still providing enough detail for more experienced users. When users need additional help, they can ask follow up questions without leaving their current repair session.
+
+🔗 **Screenshots**
+
+The screenshots below highlight the main user journey through RepairLens AI.
+
+**Home Dashboard**
+
+Displays active repair sessions, recent activity, achievements, and quick access to start a new diagnosis or continue an existing repair.
+
+**AI Diagnosis**
+
+Users can upload an image, describe the problem, or combine both inputs to receive an AI powered diagnosis.
+
+**Guided Repair**
+
+Step by step repair instructions with explanations, expected results, visual checklists, and safety guidance.
+
+**Repair Companion**
+
+An AI assistant that remains connected to the current repair session, allowing users to ask follow up questions, upload additional images, and receive context aware guidance.
+
+**Repair Completion**
+
+A completion screen showing repair progress, achievements, estimated savings, and the option to download a repair report.
+
+
+🔗 **Future Improvements**
+
+RepairLens AI has been designed with future expansion in mind. Planned improvements include:
+
+- Support for additional appliance categories.
+- More languages to improve accessibility.
+- Offline diagnosis for selected repair workflows.
+- Community verified repair guides.
+- Voice guided repair assistance.
+- Predictive maintenance recommendations.
+- Integration with spare parts suppliers.
+- Repair skill tracking and learning progress.
+
+🔗 **Contributors**
+
+This project was developed as part of the **Build with Gemma AI Hackathon 2026.**
+
+🔗 **Team**
+
+**- Adeniran Abdullahi**: Product Design, Frontend Development, AI Integration
+
+🔗 **License**
+
+This project is released under the MIT License.
+
+See the "LICENSE" file for more information.
+
+🔗 **Acknowledgements**
+
+We would like to thank the following communities and technologies for supporting this project:
+
+- Google DeepMind for developing Gemma 4.
+- Google AI Studio for providing a rapid development environment.
+- Firebase for authentication, database, and storage services.
+- The organizers of the Build with Gemma AI Hackathon 2026 for creating this opportunity.
+- Everyone who tested the prototype and provided valuable feedback.
+
+🔗 **Contact**
+
+For questions, feedback, or collaboration opportunities, please reach out through below medium.
+
+[Twitter/X](https://x.com/TechAbdullahi)
+[LinkedIn](https://www.linkedin.com/in/adeniran-abdullahi-204702363)
+
+
