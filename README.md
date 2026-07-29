@@ -244,6 +244,8 @@ Step by step repair instructions with explanations, expected results, visual che
 
 An AI assistant that remains connected to the current repair session, allowing users to ask follow up questions, upload additional images, and receive context aware guidance.
 
+<img width="1353" height="602" alt="Image" src="https://github.com/user-attachments/assets/8408a8cf-964a-43e8-91d7-6a27dbce2261" />
+
 **Repair Completion**
 
 A completion screen showing repair progress, achievements, estimated savings, and the option to download a repair report.
