@@ -1,6 +1,18 @@
 {
+  "version": 2,
+  "functions": {
+    "dist/server.cjs": {
+      "runtime": "nodejs20.x"
+    }
+  },
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/dist/server.cjs" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/api/(.*)",
+      "destination": "/dist/server.cjs"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }
