@@ -331,12 +331,24 @@ export const DiagnosticModal: React.FC<DiagnosticModalProps> = ({
   const capturePhotoFromCamera = () => {
     if (videoRef.current) {
       const canvas = document.createElement('canvas');
-      canvas.width = videoRef.current.videoWidth || 640;
-      canvas.height = videoRef.current.videoHeight || 480;
+      const maxDim = 1024;
+      let w = videoRef.current.videoWidth || 640;
+      let h = videoRef.current.videoHeight || 480;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) {
+          h = Math.round((h * maxDim) / w);
+          w = maxDim;
+        } else {
+          w = Math.round((w * maxDim) / h);
+          h = maxDim;
+        }
+      }
+      canvas.width = w;
+      canvas.height = h;
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        ctx.drawImage(videoRef.current, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
         setImages((prev) => [...prev, dataUrl]);
         showToast('Photo captured successfully ✓', 'success');
       }
@@ -351,11 +363,35 @@ export const DiagnosticModal: React.FC<DiagnosticModalProps> = ({
         const reader = new FileReader();
         reader.onload = (e) => {
           if (e.target?.result) {
-            setImages((prev) => [...prev, e.target!.result as string]);
-            count++;
-            if (count === 1) {
-              showToast('Photo uploaded successfully ✓', 'success');
-            }
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              const maxDim = 1024;
+              let w = img.width || 800;
+              let h = img.height || 600;
+              if (w > maxDim || h > maxDim) {
+                if (w > h) {
+                  h = Math.round((h * maxDim) / w);
+                  w = maxDim;
+                } else {
+                  w = Math.round((w * maxDim) / h);
+                  h = maxDim;
+                }
+              }
+              canvas.width = w;
+              canvas.height = h;
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(img, 0, 0, w, h);
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                setImages((prev) => [...prev, compressedDataUrl]);
+                count++;
+                if (count === 1) {
+                  showToast('Photo uploaded successfully ✓', 'success');
+                }
+              }
+            };
+            img.src = e.target.result as string;
           }
         };
         reader.readAsDataURL(file);
@@ -455,11 +491,35 @@ export const DiagnosticModal: React.FC<DiagnosticModalProps> = ({
           setLiveConfidenceDisplay(startScore);
         }
       }, 30);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Diagnosis failed:', err);
-      showToast('Diagnosis failed. Please retry', 'error');
       clearInterval(interval);
       setModalMode('input');
+
+      const msg = String(err?.message || err?.error || err || '').toLowerCase();
+      const status = err?.status || 0;
+
+      if (
+        status === 504 ||
+        msg.includes('504') ||
+        msg.includes('longer than usual') ||
+        msg.includes('timeout') ||
+        msg.includes('deadline') ||
+        msg.includes('deadline_exceeded') ||
+        msg.includes('abort')
+      ) {
+        showToast('Analysis taking longer than usual. Please try again.', 'warning');
+      } else if (
+        msg.includes('clearer') ||
+        msg.includes('quality') ||
+        msg.includes('blurry') ||
+        msg.includes('unclear') ||
+        msg.includes('image quality')
+      ) {
+        showToast('Please upload a clearer image for better diagnosis.', 'info');
+      } else {
+        showToast('Connection failed. Check your internet and retry.', 'error');
+      }
     }
   };
 

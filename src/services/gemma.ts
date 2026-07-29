@@ -54,110 +54,18 @@ class GemmaServiceAdapter implements IGemmaEngine {
 
       if (!response.ok) {
         const errJson = await response.json().catch(() => ({}));
-        throw new Error(errJson.error || `HTTP ${response.status}`);
+        const errStr = errJson.error || `HTTP ${response.status}`;
+        const err: any = new Error(errStr);
+        err.status = response.status;
+        err.errJson = errJson;
+        throw err;
       }
 
       const data: GemmaDiagnosticResult = await response.json();
       return data;
     } catch (error: any) {
-      console.warn('[Gemma Client Service] API call error, generating engineer response fallback:', error);
-      
-      // Real-feel intelligent fallback if server route is offline or missing API key
-      const isFan = input.applianceType.toLowerCase().includes('fan') || input.symptomDescription.toLowerCase().includes('fan');
-      const isGen = input.applianceType.toLowerCase().includes('generator') || input.symptomDescription.toLowerCase().includes('gen');
-
-      const applianceName = isFan ? 'Standing Fan' : isGen ? 'Petrol Generator' : `${input.brand || 'Household'} ${input.applianceType || 'Appliance'}`;
-
-      return {
-        repairSessionId: `rep_gemma_${Date.now()}`,
-        appliance: applianceName,
-        brand: input.brand || 'Generic',
-        confidenceScore: 88,
-        confidenceLevel: 'Likely Diagnosis',
-        likelyFault: isFan 
-          ? 'Seized Motor Bushing & Dry Bearing Lubrication' 
-          : isGen 
-            ? 'Carburetor Jet Clog & Spark Plug Deposit' 
-            : 'Thermal Fuse Disconnection & Control Circuit Resistance',
-        alternativeCauses: [
-          'Faulty Motor Run Capacitor (3.5µF / 450V rating)',
-          'Thermal Cutoff Fuse Blown due to Overheating',
-          'Primary Power Switch Contact Corrosion',
-        ],
-        estimatedTimeMinutes: 25,
-        estimatedCostNaira: 3500,
-        estimatedCostUsd: 4,
-        professionalCostNaira: 28000,
-        professionalCostUsd: 25,
-        diySavingsNaira: 24500,
-        diySavingsUsd: 21,
-        techFeeAvoidedNaira: 24500,
-        difficulty: 'Moderate',
-        safetyLevel: 'Caution Required',
-        safetyChecks: {
-          electricity: 'DISCONNECT 220V power cord before touching capacitor terminals.',
-          heat: 'Allow motor housing to cool completely (15 mins post-operation).',
-          water: 'Ensure hands and work surfaces are 100% dry.',
-          gas: isGen ? 'Shut fuel valve to off position before servicing carburetor.' : 'N/A',
-          movingParts: 'Ensure blades or flywheel are stationary before removing outer cage.',
-        },
-        safetyWarnings: [
-          'Capacitor stores residual high electrical charge even when unplugged. Discharge using insulated tool.',
-          'Never operate motor without protective outer cage fully secured.',
-        ],
-        requiredTools: ['Phillips Screwdriver #2', 'Light Machine Oil / WD-40', 'Multimeter', 'Work Gloves'],
-        reasoningFlow: {
-          originalImageNote: 'Analyzed visual input frame for physical strain, scorch marks, and alignment.',
-          highlightedComponents: ['Motor Stator Assembly', 'Run Capacitor (3.5µF)', 'Brass Bushing Sleeve'],
-          damagedAreaNotes: 'Hardened dust and dried factory grease around the rotor axle creating high friction.',
-          evidence: 'Humming sound without blade rotation indicates operational AC voltage reaching stator coil but insufficient torque to overcome bearing friction or failed starting torque from capacitor.',
-          reasoningText: 'Rotor free movement test combined with thermal safety trip analysis confirms mechanical binding at the sleeve bearings or weak capacitance.',
-        },
-        steps: [
-          {
-            stepNumber: 1,
-            title: 'Power Isolation & Electrical Safety Check',
-            description: 'Unplug power cord from wall socket. Confirm indicator lights are fully off before unscrewing outer housing.',
-            reason: 'Prevents electrical shock hazards during disassembly.',
-            estimatedMinutes: 3,
-            requiredTools: ['Work Gloves'],
-            expectedResult: 'Appliance isolated safely with zero live current.',
-            commonMistakes: 'Servicing while plugged in or touching bare capacitor leads.',
-            safetyWarning: 'Never service live 220V circuitry with power connected.',
-          },
-          {
-            stepNumber: 2,
-            title: 'Disassemble Protective Grill & Rotor Blade',
-            description: 'Unscrew front guard spinner clockwise (reverse thread) and pull fan blade gently off the motor spindle.',
-            reason: 'Exposes spindle shaft and front motor bearing housing.',
-            estimatedMinutes: 5,
-            requiredTools: ['Phillips Screwdriver #2'],
-            expectedResult: 'Bare spindle shaft visible without blade obstruction.',
-            commonMistakes: 'Forcing the spinner counter-clockwise; blade spinner is reverse-threaded.',
-          },
-          {
-            stepNumber: 3,
-            title: 'Clean Spindle & Lubricate Brass Bushing',
-            description: 'Wipe away dust build-up with dry cloth. Apply 3-4 drops of light machine oil directly onto front and rear shaft felt pads.',
-            reason: 'Restores smooth rotation and eliminates binding friction.',
-            estimatedMinutes: 10,
-            requiredTools: ['Light Machine Oil / WD-40', 'Clean Rag'],
-            expectedResult: 'Spindle spins freely by hand for several rotations without friction.',
-            commonMistakes: 'Using cooking oil or heavy grease which hardens over heat.',
-          },
-          {
-            stepNumber: 4,
-            title: 'Reassemble & Conduct Test Spin',
-            description: 'Re-attach fan blade, tighten spinner counter-clockwise, secure guard ring, plug in, and test Speed 1.',
-            reason: 'Verifies starting torque and smooth airflow without vibration.',
-            estimatedMinutes: 7,
-            requiredTools: ['Phillips Screwdriver #2'],
-            expectedResult: 'Quiet, instant blade spin and full airflow restoration.',
-            commonMistakes: 'Loose guard ring causing rattle vibration noise.',
-          },
-        ],
-        followUpQuestion: null,
-      };
+      console.warn('[Gemma Client Service] API call error:', error);
+      throw error;
     }
   }
 

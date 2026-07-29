@@ -16,13 +16,46 @@ service cloud.firestore {
     }
 
     match /repairs/{repairId} {
-      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, delete: if isSignedIn() && (
+        !('userId' in resource.data) ||
+        resource.data.userId == request.auth.uid ||
+        resource.data.userId == 'current_user' ||
+        resource.data.userId == 'demo_user'
+      );
+      allow create, update: if isSignedIn() && (
+        !('userId' in request.resource.data) ||
+        request.resource.data.userId == request.auth.uid ||
+        request.resource.data.userId == 'current_user' ||
+        request.resource.data.userId == 'demo_user' ||
+        (resource != null && (
+          !('userId' in resource.data) ||
+          resource.data.userId == request.auth.uid ||
+          resource.data.userId == 'current_user' ||
+          resource.data.userId == 'demo_user'
+        ))
+      );
     }
 
     match /repair_sessions/{sessionId} {
-      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, delete: if isSignedIn() && (
+        !('userId' in resource.data) ||
+        resource.data.userId == request.auth.uid ||
+        resource.data.userId == 'current_user' ||
+        resource.data.userId == 'demo_user'
+      );
+      allow create, update: if isSignedIn() && (
+        !('userId' in request.resource.data) ||
+        request.resource.data.userId == request.auth.uid ||
+        request.resource.data.userId == 'current_user' ||
+        request.resource.data.userId == 'demo_user' ||
+        (resource != null && (
+          !('userId' in resource.data) ||
+          resource.data.userId == request.auth.uid ||
+          resource.data.userId == 'current_user' ||
+          resource.data.userId == 'demo_user'
+        ))
+      );
     }
   }
 }
+

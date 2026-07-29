@@ -15,13 +15,25 @@ const getGenAIClient = () => {
   return new GoogleGenAI({
     apiKey,
     httpOptions: {
-      timeout: 60000,
-      headers: {
-        'User-Agent': 'aistudio-build',
-      },
+      timeout: 120000,
     },
   });
 };
+
+function parseGemmaJSON(text: string): any {
+  try {
+    // First try direct parse
+    return JSON.parse(text);
+  } catch {
+    // Strip markdown code blocks if present
+    const cleaned = text
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/\s*```$/i, '')
+      .trim();
+    return JSON.parse(cleaned);
+  }
+}
 
 // Health Check API
 app.get('/api/health', (req, res) => {
@@ -54,6 +66,9 @@ function parseBase64Image(dataUrl: string) {
  * Multimodal AI diagnosis endpoint using gemma-4-31b-it
  */
 app.post('/api/diagnose', async (req, res) => {
+  let controller: AbortController | null = null;
+  let timeoutId: NodeJS.Timeout | null = null;
+
   try {
     const { images = [], text = '', applianceType = 'General Appliance', brand = '' } = req.body;
 
@@ -62,6 +77,8 @@ app.post('/api/diagnose', async (req, res) => {
     }
 
     const ai = getGenAIClient();
+    controller = new AbortController();
+    timeoutId = setTimeout(() => controller.abort(), 90000);
 
     const systemInstruction = `
 You are Gemma 4, an elite master mechanical & electrical repair engineer for household appliances, generators, fans, water pumps, washing machines, electric irons, refrigerators, air conditioners, and electronics.
@@ -93,8 +110,9 @@ Conduct a complete multimodal diagnostic investigation and generate structured J
 
     const contentsParts: any[] = [];
 
-    // Add image parts if provided
-    for (const imgUrl of images) {
+    // Add image parts if provided (limit to max 3 images to prevent timeout)
+    const imageList = (Array.isArray(images) ? images : []).slice(0, 3);
+    for (const imgUrl of imageList) {
       if (typeof imgUrl === 'string' && imgUrl.startsWith('data:image')) {
         const parsed = parseBase64Image(imgUrl);
         contentsParts.push({
@@ -108,136 +126,158 @@ Conduct a complete multimodal diagnostic investigation and generate structured J
 
     contentsParts.push({ text: promptText });
 
-    const response = await ai.models.generateContent({
-      // DO NOT CHANGE — Required for GDG Gemma Hackathon 2026. Must use gemma-4-31b-it
-      model: 'gemma-4-31b-it',
-      contents: { parts: contentsParts },
-      config: {
-        systemInstruction,
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            repairSessionId: { type: Type.STRING },
-            appliance: { type: Type.STRING },
-            brand: { type: Type.STRING },
-            confidenceScore: { type: Type.INTEGER },
-            confidenceLevel: { type: Type.STRING },
-            likelyFault: { type: Type.STRING },
-            alternativeCauses: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-            },
-            estimatedTimeMinutes: { type: Type.INTEGER },
-            estimatedCostNaira: { type: Type.INTEGER },
-            estimatedCostUsd: { type: Type.INTEGER },
-            professionalCostNaira: { type: Type.INTEGER },
-            professionalCostUsd: { type: Type.INTEGER },
-            diySavingsNaira: { type: Type.INTEGER },
-            diySavingsUsd: { type: Type.INTEGER },
-            techFeeAvoidedNaira: { type: Type.INTEGER },
-            difficulty: { type: Type.STRING },
-            safetyLevel: { type: Type.STRING },
-            safetyChecks: {
-              type: Type.OBJECT,
-              properties: {
-                electricity: { type: Type.STRING },
-                heat: { type: Type.STRING },
-                water: { type: Type.STRING },
-                gas: { type: Type.STRING },
-                movingParts: { type: Type.STRING },
-              },
-              required: ['electricity', 'heat', 'water', 'gas', 'movingParts'],
-            },
-            safetyWarnings: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-            },
-            requiredTools: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-            },
-            reasoningFlow: {
-              type: Type.OBJECT,
-              properties: {
-                originalImageNote: { type: Type.STRING },
-                highlightedComponents: {
-                  type: Type.ARRAY,
-                  items: { type: Type.STRING },
-                },
-                damagedAreaNotes: { type: Type.STRING },
-                evidence: { type: Type.STRING },
-                reasoningText: { type: Type.STRING },
-              },
-              required: ['originalImageNote', 'highlightedComponents', 'damagedAreaNotes', 'evidence', 'reasoningText'],
-            },
-            steps: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  stepNumber: { type: Type.INTEGER },
-                  title: { type: Type.STRING },
-                  description: { type: Type.STRING },
-                  reason: { type: Type.STRING },
-                  estimatedMinutes: { type: Type.INTEGER },
-                  requiredTools: {
-                    type: Type.ARRAY,
-                    items: { type: Type.STRING },
-                  },
-                  expectedResult: { type: Type.STRING },
-                  commonMistakes: { type: Type.STRING },
-                  safetyWarning: { type: Type.STRING },
-                  visualChecklist: {
-                    type: Type.ARRAY,
-                    items: { type: Type.STRING },
-                  },
-                },
-                required: ['stepNumber', 'title', 'description', 'reason', 'estimatedMinutes', 'requiredTools', 'expectedResult', 'commonMistakes'],
-              },
-            },
-            followUpQuestion: { type: Type.STRING },
-          },
-          required: [
-            'appliance',
-            'confidenceScore',
-            'confidenceLevel',
-            'likelyFault',
-            'alternativeCauses',
-            'estimatedTimeMinutes',
-            'estimatedCostNaira',
-            'estimatedCostUsd',
-            'professionalCostNaira',
-            'diySavingsNaira',
-            'difficulty',
-            'safetyLevel',
-            'safetyChecks',
-            'safetyWarnings',
-            'requiredTools',
-            'reasoningFlow',
-            'steps',
-          ],
-        },
-      },
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      if (controller.signal.aborted) {
+        const err = new Error("Gemma is taking longer than usual. Please try again in a moment.");
+        (err as any).name = 'AbortError';
+        reject(err);
+      } else {
+        controller.signal.addEventListener('abort', () => {
+          const err = new Error("Gemma is taking longer than usual. Please try again in a moment.");
+          (err as any).name = 'AbortError';
+          reject(err);
+        });
+      }
     });
 
-    const jsonText = response.text || '{}';
-    const parsedData = JSON.parse(jsonText);
+    const response = await Promise.race([
+      ai.models.generateContent({
+        // DO NOT CHANGE — Required for GDG Gemma Hackathon 2026. Must use gemma-4-31b-it
+        model: 'gemma-4-31b-it',
+        contents: { parts: contentsParts },
+        config: {
+          systemInstruction,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              repairSessionId: { type: Type.STRING },
+              appliance: { type: Type.STRING },
+              brand: { type: Type.STRING },
+              confidenceScore: { type: Type.INTEGER },
+              confidenceLevel: { type: Type.STRING },
+              likelyFault: { type: Type.STRING },
+              alternativeCauses: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+              },
+              estimatedTimeMinutes: { type: Type.INTEGER },
+              estimatedCostNaira: { type: Type.INTEGER },
+              estimatedCostUsd: { type: Type.INTEGER },
+              professionalCostNaira: { type: Type.INTEGER },
+              professionalCostUsd: { type: Type.INTEGER },
+              diySavingsNaira: { type: Type.INTEGER },
+              diySavingsUsd: { type: Type.INTEGER },
+              techFeeAvoidedNaira: { type: Type.INTEGER },
+              difficulty: { type: Type.STRING },
+              safetyLevel: { type: Type.STRING },
+              safetyChecks: {
+                type: Type.OBJECT,
+                properties: {
+                  electricity: { type: Type.STRING },
+                  heat: { type: Type.STRING },
+                  water: { type: Type.STRING },
+                  gas: { type: Type.STRING },
+                  movingParts: { type: Type.STRING },
+                },
+                required: ['electricity', 'heat', 'water', 'gas', 'movingParts'],
+              },
+              safetyWarnings: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+              },
+              requiredTools: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+              },
+              reasoningFlow: {
+                type: Type.OBJECT,
+                properties: {
+                  originalImageNote: { type: Type.STRING },
+                  highlightedComponents: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                  },
+                  damagedAreaNotes: { type: Type.STRING },
+                  evidence: { type: Type.STRING },
+                  reasoningText: { type: Type.STRING },
+                },
+                required: ['originalImageNote', 'highlightedComponents', 'damagedAreaNotes', 'evidence', 'reasoningText'],
+              },
+              steps: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    stepNumber: { type: Type.INTEGER },
+                    title: { type: Type.STRING },
+                    description: { type: Type.STRING },
+                    reason: { type: Type.STRING },
+                    estimatedMinutes: { type: Type.INTEGER },
+                    requiredTools: {
+                      type: Type.ARRAY,
+                      items: { type: Type.STRING },
+                    },
+                    expectedResult: { type: Type.STRING },
+                    commonMistakes: { type: Type.STRING },
+                    safetyWarning: { type: Type.STRING },
+                    visualChecklist: {
+                      type: Type.ARRAY,
+                      items: { type: Type.STRING },
+                    },
+                  },
+                  required: ['stepNumber', 'title', 'description', 'reason', 'estimatedMinutes', 'requiredTools', 'expectedResult', 'commonMistakes'],
+                },
+              },
+              followUpQuestion: { type: Type.STRING },
+            },
+            required: [
+              'appliance',
+              'confidenceScore',
+              'confidenceLevel',
+              'likelyFault',
+              'alternativeCauses',
+              'estimatedTimeMinutes',
+              'estimatedCostNaira',
+              'estimatedCostUsd',
+              'professionalCostNaira',
+              'diySavingsNaira',
+              'difficulty',
+              'safetyLevel',
+              'safetyChecks',
+              'safetyWarnings',
+              'requiredTools',
+              'reasoningFlow',
+              'steps',
+            ],
+          },
+        },
+      }),
+      timeoutPromise,
+    ]);
+
+    if (timeoutId) clearTimeout(timeoutId);
+
+    const parsedData = parseGemmaJSON(response.text || '{}');
     if (!parsedData.repairSessionId) {
       parsedData.repairSessionId = `rep_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
     }
 
     return res.json(parsedData);
   } catch (error: any) {
+    if (timeoutId) clearTimeout(timeoutId);
     console.error('[API /api/diagnose Error]:', error);
     if (
+      error?.name === 'AbortError' ||
+      controller?.signal?.aborted ||
       error?.message?.includes('timeout') ||
       error?.message?.includes('deadline') ||
       error?.message?.includes('Timeout') ||
+      error?.message?.includes('DEADLINE_EXCEEDED') ||
       error?.code === 'ETIMEDOUT'
     ) {
       return res.status(504).json({
-        error: "Diagnosis is taking longer than usual. Please try again.",
+        error: "Gemma is taking longer than usual. Please try again in a moment.",
       });
     }
     return res.status(500).json({
@@ -359,8 +399,7 @@ Incorporate all context, completed steps, current step details, and conversation
       },
     });
 
-    const jsonText = response.text || '{}';
-    const parsedData = JSON.parse(jsonText);
+    const parsedData = parseGemmaJSON(response.text || '{}');
     return res.json(parsedData);
   } catch (error: any) {
     console.error('[API /api/repair-chat Error]:', error);
@@ -447,8 +486,7 @@ STRICT MANDATORY RULES:
       },
     });
 
-    const jsonText = response.text || '{}';
-    return res.json(JSON.parse(jsonText));
+    return res.json(parseGemmaJSON(response.text || '{}'));
   } catch (error: any) {
     console.error('[API /api/repair-summary Error]:', error);
     return res.status(500).json({
@@ -507,8 +545,7 @@ Rules:
       },
     });
 
-    const jsonText = response.text || '{}';
-    return res.json(JSON.parse(jsonText));
+    return res.json(parseGemmaJSON(response.text || '{}'));
   } catch (error: any) {
     console.error('[API /api/repair-recap Error]:', error);
     const appliance = req.body?.sessionContext?.diagnosis?.appliance || 'appliance';

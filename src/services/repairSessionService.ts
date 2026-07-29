@@ -56,8 +56,13 @@ export const repairSessionService = {
   async saveSession(session: ActiveRepairSession): Promise<void> {
     const path = `repair_sessions/${session.repairSessionId}`;
     try {
+      const currentUserId = auth.currentUser?.uid;
+      const sessionToSave = {
+        ...session,
+        userId: currentUserId || session.userId || 'current_user',
+      };
       const docRef = doc(db, 'repair_sessions', session.repairSessionId);
-      await setDoc(docRef, session, { merge: true });
+      await setDoc(docRef, sessionToSave, { merge: true });
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, path);
     }
@@ -72,13 +77,15 @@ export const repairSessionService = {
   ): Promise<void> {
     const path = `repair_sessions/${repairSessionId}`;
     try {
+      const currentUserId = auth.currentUser?.uid;
       const docRef = doc(db, 'repair_sessions', repairSessionId);
       const updatePayload = {
         ...updates,
+        ...(currentUserId ? { userId: currentUserId } : {}),
         updatedAt: new Date().toISOString(),
         lastActivity: new Date().toISOString(),
       };
-      await updateDoc(docRef, updatePayload);
+      await setDoc(docRef, updatePayload, { merge: true });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, path);
     }
