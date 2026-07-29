@@ -250,6 +250,7 @@ An AI assistant that remains connected to the current repair session, allowing u
 
 A completion screen showing repair progress, achievements, estimated savings, and the option to download a repair report.
 
+<img width="1366" height="600" alt="Image" src="https://github.com/user-attachments/assets/5c24a214-0211-411f-842c-97bee3bb99ab" />
 
 🔗 **Future Improvements**
 
