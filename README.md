@@ -220,37 +220,38 @@ RepairLens AI explains repair steps in clear language that is suitable for begin
 
 The screenshots below highlight the main user journey through RepairLens AI.
 
-**Home Dashboard**
+🔗 **Home Dashboard**
 
 Displays active repair sessions, recent activity, achievements, and quick access to start a new diagnosis or continue an existing repair.
 
 <img width="1359" height="590" alt="Image" src="https://github.com/user-attachments/assets/d0eb90d1-d416-4a79-b7fa-6a9a69500e70" />
 
 
-**AI Diagnosis**
+🔗 **AI Diagnosis**
 
 Users can upload an image, describe the problem, or combine both inputs to receive an AI powered diagnosis.
 
 <img width="1366" height="605" alt="Image" src="https://github.com/user-attachments/assets/de941aca-fb2f-4c62-b599-2b43150ad3c6" />
 
 
-**Guided Repair**
+🔗 **Guided Repair**
 
 Step by step repair instructions with explanations, expected results, visual checklists, and safety guidance.
 
 <img width="1366" height="610" alt="Image" src="https://github.com/user-attachments/assets/fe221181-da37-4bec-9aed-8f835d028f51" />
 
-**Repair Companion**
+🔗 **Repair Companion**
 
 An AI assistant that remains connected to the current repair session, allowing users to ask follow up questions, upload additional images, and receive context aware guidance.
 
 <img width="1353" height="602" alt="Image" src="https://github.com/user-attachments/assets/8408a8cf-964a-43e8-91d7-6a27dbce2261" />
 
-**Repair Completion**
+🔗 **Repair Completion**
 
 A completion screen showing repair progress, achievements, estimated savings, and the option to download a repair report.
 
 <img width="1366" height="600" alt="Image" src="https://github.com/user-attachments/assets/5c24a214-0211-411f-842c-97bee3bb99ab" />
+
 
 🔗 **Future Improvements**
 
