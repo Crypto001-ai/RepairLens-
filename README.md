@@ -221,6 +221,7 @@ RepairLens AI explains repair steps in clear language that is suitable for begin
 The screenshots below highlight the main user journey through RepairLens AI.
 
 **Home Dashboard**
+
 Displays active repair sessions, recent activity, achievements, and quick access to start a new diagnosis or continue an existing repair.
 
 <img width="1359" height="590" alt="Image" src="https://github.com/user-attachments/assets/d0eb90d1-d416-4a79-b7fa-6a9a69500e70" />
