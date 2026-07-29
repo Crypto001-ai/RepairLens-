@@ -1,11 +1,4 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "dist/server.cjs",
-      "use": "@vercel/node"
-    }
-  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/dist/server.cjs" },
     { "source": "/(.*)", "destination": "/index.html" }
