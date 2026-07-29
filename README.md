@@ -226,15 +226,19 @@ Displays active repair sessions, recent activity, achievements, and quick access
 
 <img width="1359" height="590" alt="Image" src="https://github.com/user-attachments/assets/d0eb90d1-d416-4a79-b7fa-6a9a69500e70" />
 
+
 **AI Diagnosis**
 
 Users can upload an image, describe the problem, or combine both inputs to receive an AI powered diagnosis.
 
 <img width="1366" height="605" alt="Image" src="https://github.com/user-attachments/assets/de941aca-fb2f-4c62-b599-2b43150ad3c6" />
 
+
 **Guided Repair**
 
 Step by step repair instructions with explanations, expected results, visual checklists, and safety guidance.
+
+<img width="1366" height="610" alt="Image" src="https://github.com/user-attachments/assets/fe221181-da37-4bec-9aed-8f835d028f51" />
 
 **Repair Companion**
 
