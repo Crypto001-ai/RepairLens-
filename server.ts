@@ -140,6 +140,10 @@ Conduct a complete multimodal diagnostic investigation and generate structured J
       }
     });
 
+    console.log('[Diagnose] Sending request to Gemma...');
+    console.log('[Diagnose] Images:', imageList.length);
+    console.log('[Diagnose] Prompt length:', promptText.length);
+    
     const response = await Promise.race([
       ai.models.generateContent({
         // DO NOT CHANGE — Required for GDG Gemma Hackathon 2026. Must use gemma-4-31b-it
@@ -265,8 +269,13 @@ Conduct a complete multimodal diagnostic investigation and generate structured J
 
     return res.json(parsedData);
   } catch (error: any) {
+    console.log('[Diagnose] Response received from Gemma');
     if (timeoutId) clearTimeout(timeoutId);
-    console.error('[API /api/diagnose Error]:', error);
+    console.error('========== GEMMA ERROR ==========');
+    console.error('Name:', error?.name);
+    console.error('Message:', error?.message);
+    console.error(error);
+    console.error('================================');
     if (
       error?.name === 'AbortError' ||
       controller?.signal?.aborted ||
