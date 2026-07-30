@@ -1,3 +1,4 @@
+import API_BASE_URL from '../config/api';
 import { 
   GemmaDiagnosticInput, 
   GemmaDiagnosticResult, 
@@ -41,7 +42,7 @@ class GemmaServiceAdapter implements IGemmaEngine {
    */
   public async diagnoseAppliance(input: GemmaDiagnosticInput): Promise<GemmaDiagnosticResult> {
     try {
-      const response = await fetch('/api/diagnose', {
+      const response = await fetch(`${API_BASE_URL}/api/diagnose`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -89,7 +90,7 @@ class GemmaServiceAdapter implements IGemmaEngine {
     actionRecommendation?: string;
   }> {
     try {
-      const response = await fetch('/api/repair-chat', {
+      const response = await fetch(`${API_BASE_URL}/api/repair-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
@@ -167,7 +168,7 @@ class GemmaServiceAdapter implements IGemmaEngine {
    */
   public async generateRepairRecap(sessionContext: any): Promise<{ recapText: string }> {
     try {
-      const response = await fetch('/api/repair-recap', {
+      const response = await fetch(`${API_BASE_URL}/api/repair-recap`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionContext }),
@@ -199,7 +200,7 @@ class GemmaServiceAdapter implements IGemmaEngine {
     timeSpentMinutes: number;
   }): Promise<RepairSummaryResult> {
     try {
-      const response = await fetch('/api/repair-summary', {
+      const response = await fetch(`${API_BASE_URL}/api/repair-summary`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
