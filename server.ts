@@ -4,7 +4,7 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 // Middleware for parsing JSON requests with base64 image payload support
 app.use(express.json({ limit: '25mb' }));
@@ -567,7 +567,7 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
+    const distPath = path.resolve(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
@@ -575,7 +575,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[RepairLens AI Server] Running on http://localhost:${PORT}`);
+    console.log(`[RepairLens AI Server] Running on port ${PORT}`);
   });
 }
 
