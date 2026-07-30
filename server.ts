@@ -1,21 +1,22 @@
 import express from 'express';
 import path from 'path';
-import { GoogleGenAI, Type } from '@google/genai';
+import OpenAI from 'openai';
 import { createServer as createViteServer } from 'vite';
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = 3000;
 
 // Middleware for parsing JSON requests with base64 image payload support
 app.use(express.json({ limit: '25mb' }));
 
-// Initialize Google GenAI SDK with server-side GEMINI_API_KEY
-const getGenAIClient = () => {
-  const apiKey = process.env.GEMINI_API_KEY || '';
-  return new GoogleGenAI({
-    apiKey,
-    httpOptions: {
-      timeout: 120000,
+// Initialize OpenRouter OpenAI SDK client helper
+const getOpenRouterClient = () => {
+  return new OpenAI({
+    baseURL: 'https://openrouter.ai/api/v1',
+    apiKey: process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY || '',
+    defaultHeaders: {
+      'HTTP-Referer': 'https://repair-lens-five.vercel.app',
+      'X-Title': 'RepairLens AI',
     },
   });
 };
@@ -39,31 +40,14 @@ function parseGemmaJSON(text: string): any {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    model: 'gemma-4-31b-it',
-    hasKey: Boolean(process.env.GEMINI_API_KEY),
+    model: 'google/gemma-4-31b-it via OpenRouter',
+    hasKey: Boolean(process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY),
   });
 });
 
 /**
- * Helper to extract base64 image data and mime type
- */
-function parseBase64Image(dataUrl: string) {
-  const match = dataUrl.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
-  if (match) {
-    return {
-      mimeType: match[1],
-      data: match[2],
-    };
-  }
-  return {
-    mimeType: 'image/jpeg',
-    data: dataUrl.replace(/^data:image\/[a-zA-Z+]+;base64,/, ''),
-  };
-}
-
-/**
  * POST /api/diagnose
- * Multimodal AI diagnosis endpoint using gemma-4-31b-it
+ * Multimodal AI diagnosis endpoint using google/gemma-4-31b-it:free via OpenRouter
  */
 app.post('/api/diagnose', async (req, res) => {
   let controller: AbortController | null = null;
@@ -76,9 +60,8 @@ app.post('/api/diagnose', async (req, res) => {
       return res.status(400).json({ error: 'Please provide at least one image or a problem description.' });
     }
 
-    const ai = getGenAIClient();
     controller = new AbortController();
-    timeoutId = setTimeout(() => controller.abort(), 90000);
+    timeoutId = setTimeout(() => controller?.abort(), 90000);
 
     const systemInstruction = `
 You are Gemma 4, an elite master mechanical & electrical repair engineer for household appliances, generators, fans, water pumps, washing machines, electric irons, refrigerators, air conditioners, and electronics.
@@ -97,7 +80,7 @@ CRITICAL INSTRUCTIONS:
 6. Provide an Explainable AI reasoning breakdown tracing: Original image observations -> Highlighted components -> Damaged area -> Evidence -> Reasoning -> Final Diagnosis.
 7. Provide clear, numbered step-by-step DIY repair instructions with expected results, common mistakes, required tools, and safety warnings.
 8. If image quality is poor or evidence is ambiguous, include a specific follow-up question in 'followUpQuestion'.
-9. Output STRICT JSON adhering to the required schema.
+9. Output STRICT JSON object with these keys: repairSessionId, appliance, brand, confidenceScore, confidenceLevel, likelyFault, alternativeCauses (array), estimatedTimeMinutes, estimatedCostNaira, estimatedCostUsd, professionalCostNaira, professionalCostUsd, diySavingsNaira, diySavingsUsd, techFeeAvoidedNaira, difficulty, safetyLevel, safetyChecks (object with electricity, heat, water, gas, movingParts), safetyWarnings (array), requiredTools (array), reasoningFlow (object with originalImageNote, highlightedComponents, damagedAreaNotes, evidence, reasoningText), steps (array of objects with stepNumber, title, description, reason, estimatedMinutes, requiredTools, expectedResult, commonMistakes, safetyWarning), followUpQuestion.
 `;
 
     const promptText = `
@@ -108,174 +91,55 @@ User Symptom Description: "${text || 'No text description provided. Rely on visu
 Conduct a complete multimodal diagnostic investigation and generate structured JSON results.
 `;
 
-    const contentsParts: any[] = [];
+    const client = getOpenRouterClient();
+    const messages: any[] = [];
 
-    // Add image parts if provided (limit to max 3 images to prevent timeout)
     const imageList = (Array.isArray(images) ? images : []).slice(0, 3);
-    for (const imgUrl of imageList) {
-      if (typeof imgUrl === 'string' && imgUrl.startsWith('data:image')) {
-        const parsed = parseBase64Image(imgUrl);
-        contentsParts.push({
-          inlineData: {
-            mimeType: parsed.mimeType,
-            data: parsed.data,
-          },
-        });
-      }
+
+    if (typeof imageList !== 'undefined' && imageList.length > 0) {
+      const imageContent: any[] = imageList.map((imgUrl: string) => ({
+        type: 'image_url',
+        image_url: { url: imgUrl },
+      }));
+
+      imageContent.push({
+        type: 'text',
+        text: promptText,
+      });
+
+      messages.push({
+        role: 'user',
+        content: imageContent,
+      });
+    } else {
+      messages.push({
+        role: 'user',
+        content: promptText,
+      });
     }
 
-    contentsParts.push({ text: promptText });
-
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      if (controller.signal.aborted) {
-        const err = new Error("Gemma is taking longer than usual. Please try again in a moment.");
-        (err as any).name = 'AbortError';
-        reject(err);
-      } else {
-        controller.signal.addEventListener('abort', () => {
-          const err = new Error("Gemma is taking longer than usual. Please try again in a moment.");
-          (err as any).name = 'AbortError';
-          reject(err);
-        });
-      }
-    });
-
-    console.log('[Diagnose] Sending request to Gemma...');
-    console.log('[Diagnose] Images:', imageList.length);
-    console.log('[Diagnose] Prompt length:', promptText.length);
-    
-    const response = await Promise.race([
-      ai.models.generateContent({
-        // DO NOT CHANGE — Required for GDG Gemma Hackathon 2026. Must use gemma-4-31b-it
-        model: 'gemma-4-31b-it',
-        contents: { parts: contentsParts },
-        config: {
-          systemInstruction,
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              repairSessionId: { type: Type.STRING },
-              appliance: { type: Type.STRING },
-              brand: { type: Type.STRING },
-              confidenceScore: { type: Type.INTEGER },
-              confidenceLevel: { type: Type.STRING },
-              likelyFault: { type: Type.STRING },
-              alternativeCauses: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-              },
-              estimatedTimeMinutes: { type: Type.INTEGER },
-              estimatedCostNaira: { type: Type.INTEGER },
-              estimatedCostUsd: { type: Type.INTEGER },
-              professionalCostNaira: { type: Type.INTEGER },
-              professionalCostUsd: { type: Type.INTEGER },
-              diySavingsNaira: { type: Type.INTEGER },
-              diySavingsUsd: { type: Type.INTEGER },
-              techFeeAvoidedNaira: { type: Type.INTEGER },
-              difficulty: { type: Type.STRING },
-              safetyLevel: { type: Type.STRING },
-              safetyChecks: {
-                type: Type.OBJECT,
-                properties: {
-                  electricity: { type: Type.STRING },
-                  heat: { type: Type.STRING },
-                  water: { type: Type.STRING },
-                  gas: { type: Type.STRING },
-                  movingParts: { type: Type.STRING },
-                },
-                required: ['electricity', 'heat', 'water', 'gas', 'movingParts'],
-              },
-              safetyWarnings: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-              },
-              requiredTools: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-              },
-              reasoningFlow: {
-                type: Type.OBJECT,
-                properties: {
-                  originalImageNote: { type: Type.STRING },
-                  highlightedComponents: {
-                    type: Type.ARRAY,
-                    items: { type: Type.STRING },
-                  },
-                  damagedAreaNotes: { type: Type.STRING },
-                  evidence: { type: Type.STRING },
-                  reasoningText: { type: Type.STRING },
-                },
-                required: ['originalImageNote', 'highlightedComponents', 'damagedAreaNotes', 'evidence', 'reasoningText'],
-              },
-              steps: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    stepNumber: { type: Type.INTEGER },
-                    title: { type: Type.STRING },
-                    description: { type: Type.STRING },
-                    reason: { type: Type.STRING },
-                    estimatedMinutes: { type: Type.INTEGER },
-                    requiredTools: {
-                      type: Type.ARRAY,
-                      items: { type: Type.STRING },
-                    },
-                    expectedResult: { type: Type.STRING },
-                    commonMistakes: { type: Type.STRING },
-                    safetyWarning: { type: Type.STRING },
-                    visualChecklist: {
-                      type: Type.ARRAY,
-                      items: { type: Type.STRING },
-                    },
-                  },
-                  required: ['stepNumber', 'title', 'description', 'reason', 'estimatedMinutes', 'requiredTools', 'expectedResult', 'commonMistakes'],
-                },
-              },
-              followUpQuestion: { type: Type.STRING },
-            },
-            required: [
-              'appliance',
-              'confidenceScore',
-              'confidenceLevel',
-              'likelyFault',
-              'alternativeCauses',
-              'estimatedTimeMinutes',
-              'estimatedCostNaira',
-              'estimatedCostUsd',
-              'professionalCostNaira',
-              'diySavingsNaira',
-              'difficulty',
-              'safetyLevel',
-              'safetyChecks',
-              'safetyWarnings',
-              'requiredTools',
-              'reasoningFlow',
-              'steps',
-            ],
-          },
-        },
-      }),
-      timeoutPromise,
-    ]);
+    const completion = await client.chat.completions.create({
+      // DO NOT CHANGE — Required for GDG Gemma Hackathon 2026
+      model: 'google/gemma-4-31b-it:free',
+      messages: [
+        { role: 'system', content: systemInstruction },
+        ...messages,
+      ],
+      response_format: { type: 'json_object' },
+    }, { timeout: 120000 });
 
     if (timeoutId) clearTimeout(timeoutId);
 
-    const parsedData = parseGemmaJSON(response.text || '{}');
+    const responseText = completion.choices[0]?.message?.content || '{}';
+    const parsedData = parseGemmaJSON(responseText);
     if (!parsedData.repairSessionId) {
       parsedData.repairSessionId = `rep_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
     }
 
     return res.json(parsedData);
   } catch (error: any) {
-    console.log('[Diagnose] Response received from Gemma');
     if (timeoutId) clearTimeout(timeoutId);
-    console.error('========== GEMMA ERROR ==========');
-    console.error('Name:', error?.name);
-    console.error('Message:', error?.message);
-    console.error(error);
-    console.error('================================');
+    console.error('[API /api/diagnose Error]:', error);
     if (
       error?.name === 'AbortError' ||
       controller?.signal?.aborted ||
@@ -286,7 +150,7 @@ Conduct a complete multimodal diagnostic investigation and generate structured J
       error?.code === 'ETIMEDOUT'
     ) {
       return res.status(504).json({
-        error: "Gemma is taking longer than usual. Please try again in a moment.",
+        error: 'Gemma is taking longer than usual. Please try again in a moment.',
       });
     }
     return res.status(500).json({
@@ -298,7 +162,7 @@ Conduct a complete multimodal diagnostic investigation and generate structured J
 
 /**
  * POST /api/repair-chat
- * Active Repair Companion Assistant using gemma-4-31b-it
+ * Active Repair Companion Assistant using google/gemma-4-31b-it:free via OpenRouter
  */
 app.post('/api/repair-chat', async (req, res) => {
   try {
@@ -307,8 +171,6 @@ app.post('/api/repair-chat', async (req, res) => {
     if (!message && !followUpImage) {
       return res.status(400).json({ error: 'Please provide a question or a follow-up image.' });
     }
-
-    const ai = getGenAIClient();
 
     const systemInstruction = `
 You are Gemma 4, an expert master technician and patient mentor acting as an active DIY Repair Companion (Session ID: ${repairSessionId || 'ActiveSession'}).
@@ -333,9 +195,9 @@ CRITICAL GUIDELINES & BEHAVIOR:
      "Locate the small cylindrical capacitor attached near the motor housing. Before touching it, make sure the appliance is completely unplugged from the wall socket. Carefully disconnect one wire at a time so you remember where each wire belongs. If you're unsure, take a quick photo first so you can reconnect everything correctly later."
 5. CONVERSATION CONTINUITY:
    - Naturally reference previous messages or confirmed progress in the chat.
-   - Example: "Earlier you confirmed that the fan blade has already been removed, so now let's focus on lubricating the motor bearing."
 6. FOLLOW-UP IMAGE ANALYSIS:
    - If a follow-up image is uploaded, evaluate if component replacement looks "Looks correct", "Looks incorrect", or "Needs adjustment", and point out visible alignment details.
+7. OUTPUT FORMAT: Output a JSON object with keys: text (string), imageAssessment (optional object with status, details, highlightedDifferences), actionRecommendation (string), nextSuggestedStep (optional number).
 `;
 
     const currentStepInfo = sessionContext?.currentStepObj || {};
@@ -364,51 +226,42 @@ User Message / Query: "${message || 'User uploaded a follow-up photo during acti
 Incorporate all context, completed steps, current step details, and conversation history into a helpful, teaching-focused response.
 `;
 
-    const parts: any[] = [];
+    const client = getOpenRouterClient();
+    const messages: any[] = [];
 
     if (followUpImage && typeof followUpImage === 'string' && followUpImage.startsWith('data:image')) {
-      const parsed = parseBase64Image(followUpImage);
-      parts.push({
-        inlineData: {
-          mimeType: parsed.mimeType,
-          data: parsed.data,
-        },
+      messages.push({
+        role: 'user',
+        content: [
+          {
+            type: 'image_url',
+            image_url: { url: followUpImage },
+          },
+          {
+            type: 'text',
+            text: promptText,
+          },
+        ],
+      });
+    } else {
+      messages.push({
+        role: 'user',
+        content: promptText,
       });
     }
 
-    parts.push({ text: promptText });
+    const completion = await client.chat.completions.create({
+      // DO NOT CHANGE — Required for GDG Gemma Hackathon 2026
+      model: 'google/gemma-4-31b-it:free',
+      messages: [
+        { role: 'system', content: systemInstruction },
+        ...messages,
+      ],
+      response_format: { type: 'json_object' },
+    }, { timeout: 120000 });
 
-    const response = await ai.models.generateContent({
-      // DO NOT CHANGE — Required for GDG Gemma Hackathon 2026. Must use gemma-4-31b-it
-      model: 'gemma-4-31b-it',
-      contents: { parts },
-      config: {
-        systemInstruction,
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            text: { type: Type.STRING },
-            imageAssessment: {
-              type: Type.OBJECT,
-              properties: {
-                status: { type: Type.STRING }, // "Looks correct" | "Looks incorrect" | "Needs adjustment"
-                details: { type: Type.STRING },
-                highlightedDifferences: {
-                  type: Type.ARRAY,
-                  items: { type: Type.STRING },
-                },
-              },
-            },
-            actionRecommendation: { type: Type.STRING },
-            nextSuggestedStep: { type: Type.INTEGER },
-          },
-          required: ['text', 'actionRecommendation'],
-        },
-      },
-    });
-
-    const parsedData = parseGemmaJSON(response.text || '{}');
+    const responseText = completion.choices[0]?.message?.content || '{}';
+    const parsedData = parseGemmaJSON(responseText);
     return res.json(parsedData);
   } catch (error: any) {
     console.error('[API /api/repair-chat Error]:', error);
@@ -421,13 +274,11 @@ Incorporate all context, completed steps, current step details, and conversation
 
 /**
  * POST /api/repair-summary
- * Generates official repair completion achievement summary
+ * Generates official repair completion achievement summary using OpenRouter
  */
 app.post('/api/repair-summary', async (req, res) => {
   try {
     const { sessionContext, timeSpentMinutes } = req.body;
-
-    const ai = getGenAIClient();
 
     const itemRepaired = sessionContext?.appliance || 'Appliance';
     const faultFixed = sessionContext?.likelyFault || 'Diagnosed issue';
@@ -468,34 +319,26 @@ STRICT MANDATORY RULES:
    - MUST be specific to ${itemRepaired} (e.g. for generator: "Always check fuel level before diagnosis", "Clean the carburetor every 3 months", "Change the oil regularly to avoid damage").
    - Simple English only.
    - MAXIMUM 8 WORDS per lesson.
+
+Output JSON object with keys: title, problemSummary, solutionSummary, badgeUnlocked, lessonsLearned, shareableQuote.
 `;
 
-    const response = await ai.models.generateContent({
-      // DO NOT CHANGE — Required for GDG Gemma Hackathon 2026. Must use gemma-4-31b-it
-      model: 'gemma-4-31b-it',
-      contents: prompt,
-      config: {
-        systemInstruction: `You are Gemma 4. Generate a simple, friendly repair completion summary. Always output simple English, maximum 10 words for subtitle, maximum 8 words per lesson, and dynamic title and lessons specific to the item repaired (${itemRepaired}).`,
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            title: { type: Type.STRING },
-            problemSummary: { type: Type.STRING },
-            solutionSummary: { type: Type.STRING },
-            badgeUnlocked: { type: Type.STRING },
-            lessonsLearned: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-            },
-            shareableQuote: { type: Type.STRING },
-          },
-          required: ['title', 'problemSummary', 'solutionSummary', 'badgeUnlocked', 'lessonsLearned', 'shareableQuote'],
+    const client = getOpenRouterClient();
+    const completion = await client.chat.completions.create({
+      // DO NOT CHANGE — Required for GDG Gemma Hackathon 2026
+      model: 'google/gemma-4-31b-it:free',
+      messages: [
+        {
+          role: 'system',
+          content: `You are Gemma 4. Generate a simple, friendly repair completion summary. Always output simple English, maximum 10 words for subtitle, maximum 8 words per lesson, and dynamic title and lessons specific to the item repaired (${itemRepaired}). Output valid JSON object.`,
         },
-      },
-    });
+        { role: 'user', content: prompt },
+      ],
+      response_format: { type: 'json_object' },
+    }, { timeout: 120000 });
 
-    return res.json(parseGemmaJSON(response.text || '{}'));
+    const responseText = completion.choices[0]?.message?.content || '{}';
+    return res.json(parseGemmaJSON(responseText));
   } catch (error: any) {
     console.error('[API /api/repair-summary Error]:', error);
     return res.status(500).json({
@@ -507,12 +350,11 @@ STRICT MANDATORY RULES:
 
 /**
  * POST /api/repair-recap
- * Generates intelligent welcome back AI recap for active repair session
+ * Generates intelligent welcome back AI recap for active repair session using OpenRouter
  */
 app.post('/api/repair-recap', async (req, res) => {
   try {
     const { sessionContext } = req.body;
-    const ai = getGenAIClient();
 
     const appliance = sessionContext?.diagnosis?.appliance || sessionContext?.appliance || 'appliance';
     const likelyFault = sessionContext?.diagnosis?.likelyFault || sessionContext?.likelyFault || 'diagnosed fault';
@@ -535,26 +377,22 @@ Rules:
 1. Max 2-3 short sentences.
 2. Under 50 words.
 3. Enthusiastic, encouraging, and clear master repair engineer voice.
+Output JSON object with key "recapText".
 `;
 
-    const response = await ai.models.generateContent({
-      // DO NOT CHANGE — Required for GDG Gemma Hackathon 2026. Must use gemma-4-31b-it
-      model: 'gemma-4-31b-it',
-      contents: prompt,
-      config: {
-        systemInstruction: 'You are Gemma 4, an encouraging AI master repair engineer.',
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            recapText: { type: Type.STRING },
-          },
-          required: ['recapText'],
-        },
-      },
-    });
+    const client = getOpenRouterClient();
+    const completion = await client.chat.completions.create({
+      // DO NOT CHANGE — Required for GDG Gemma Hackathon 2026
+      model: 'google/gemma-4-31b-it:free',
+      messages: [
+        { role: 'system', content: 'You are Gemma 4, an encouraging AI master repair engineer. Output valid JSON object.' },
+        { role: 'user', content: prompt },
+      ],
+      response_format: { type: 'json_object' },
+    }, { timeout: 120000 });
 
-    return res.json(parseGemmaJSON(response.text || '{}'));
+    const responseText = completion.choices[0]?.message?.content || '{}';
+    return res.json(parseGemmaJSON(responseText));
   } catch (error: any) {
     console.error('[API /api/repair-recap Error]:', error);
     const appliance = req.body?.sessionContext?.diagnosis?.appliance || 'appliance';
@@ -576,7 +414,7 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.resolve(process.cwd(), 'dist');
+    const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
@@ -584,7 +422,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[RepairLens AI Server] Running on port ${PORT}`);
+    console.log(`[RepairLens AI Server] Running on http://localhost:${PORT}`);
   });
 }
 
