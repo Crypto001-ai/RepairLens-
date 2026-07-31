@@ -18,7 +18,7 @@ As a result, usable appliances become electronic waste, households spend more mo
 
 🔗 **Our Solution**
 
-RepairLens AI provides a guided repair experience powered by Google's Gemma 4 model.
+RepairLens AI provides a guided repair experience powered by Google's Gemma 4 model through OpenRouter.
 
 Instead of presenting users with generic repair information, RepairLens analyzes the reported fault, understands the repair context, and guides users through each repair step with clear explanations, safety advice, expected results, and interactive AI support.
 
@@ -81,26 +81,30 @@ RepairLens AI guides users through a simple repair workflow.
 🔗 **Tech Stack**
 
 ```
-                User
-                  │
-                  ▼
-          RepairLens AI
-                  │
-        ┌─────────┴─────────┐
-        ▼                   ▼
- Firebase Services      Gemma 4 (Gemini API)
-        │                   │
-        └─────────┬─────────┘
-                  ▼
-         Diagnosis & Repair Guidance
-                  │
-                  ▼
-          Repair Reports & Progress
+                  User
+                   │
+                   ▼
+          React + TypeScript
+                   │
+                   ▼
+         Express Backend (Render)
+                   │
+                   ▼
+ OpenRouter (Google AI Studio BYOK)
+                   │
+                   ▼
+      Google Gemma 4 31B Model
+                   │
+                   ▼
+     Diagnosis & Repair Guidance
+                   │
+          Firebase Services
+      (Auth + Firestore + Storage)
 ```
 
 🔗 **Why Gemma 4?**
 
-RepairLens AI is built around Google's Gemma 4 model because the application depends on more than a simple question and answer chatbot.
+RepairLens AI is built around Google's Gemma 4 31B model because the application depends on more than a simple question and answer chatbot.
 Gemma helps users analyze appliance problems from images and text, explains repair steps in simple language, remembers the current repair session, answers follow up questions without losing context, and adapts its guidance as users upload additional photos during a repair.
 This allows RepairLens AI to provide an interactive repair experience rather than a one time diagnosis.
 
@@ -109,7 +113,7 @@ This allows RepairLens AI to provide an interactive repair experience rather tha
 RepairLens AI follows a simple cloud based architecture.
 The user signs in and starts a new repair session.
 Images and repair details are securely stored in Firebase.
-The application sends the user's request to the Gemma 4 model through the Gemini API.
+The application sends the user's request to the Google's Gemma 4 model via OpenRouter using Google Al Studio BYOK through the Gemini API.
 Gemma analyzes the input and returns a diagnosis together with repair guidance.
 Repair progress is continuously saved so users can pause and continue later without losing their work.
 Once the repair is completed, the application generates a repair report and updates the user's repair history and achievements.
