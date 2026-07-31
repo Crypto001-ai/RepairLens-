@@ -132,6 +132,7 @@ Repair progress is continuously saved so users can pause and continue later with
 Once the repair is completed, the application generates a repair report and updates the user's repair history and achievements.
 
 🔗 **Project Structure**
+
 The project is organized into separate folders to keep the codebase clean and easy to maintain.
 
 ```
