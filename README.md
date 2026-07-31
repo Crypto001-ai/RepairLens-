@@ -2,6 +2,19 @@
 
 Repair with confidence using AI guidance.
 
+🔗 **Live Demo**
+
+**Application:**  
+https://repairlens-ai.onrender.com
+
+> **Deployment Note:** RepairLens AI is currently hosted on Render's free tier. The first request after a period of inactivity may take approximately **10–15 seconds** while the backend wakes up. Once active, subsequent requests respond normally.
+
+🔗 **Demo Video**
+
+Watch the full project demonstration:
+
+https://youtu.be/sfPBQPsJldY?si=IA42RYbPhCEpaSCe
+
 🔗 **Overview**
 
 RepairLens AI is a web application that helps people diagnose and repair household appliances with the support of Google's Gemma 4 model.
@@ -147,6 +160,7 @@ RepairLens-AI/
 ```
 
 🔗 **Getting Started**
+
 Follow these steps to run RepairLens AI locally.
 
 🔗 **Prerequisites**
@@ -322,12 +336,6 @@ This project was developed for the Google Developer Groups Build with Gemma Hack
 🔗 **Team**
 
 **- Adeniran Abdullahi**: Product Design, Frontend Development, AI Integration
-
-🔗 **License**
-
-This project is released under the MIT License.
-
-See the "LICENSE" file for more information.
 
 🔗 **Acknowledgements**
 
