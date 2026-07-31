@@ -123,21 +123,27 @@ The project is organized into separate folders to keep the codebase clean and ea
 
 ```
 RepairLens-AI/
-├── public/                 # Static assets
+├── assets/                 # Static project assets
+├── public/                 # Public files
 ├── src/
-│   ├── assets/             # Images, icons, and branding
+│   ├── assets/             # Images and branding
 │   ├── components/         # Reusable UI components
-│   ├── pages/              # Application pages
+│   ├── context/            # React context providers
+│   ├── features/           # Feature modules
+│   ├── firebase/           # Firebase configuration
 │   ├── hooks/              # Custom React hooks
-│   ├── services/           # Firebase and API services
-│   ├── utils/              # Helper functions
-│   ├── types/              # TypeScript types
-│   ├── styles/             # Global styles
-│   └── main.tsx            # Application entry point
-├── server/                 # Backend logic and API routes
-├── .env.example            # Environment variable template
+│   ├── services/           # API and AI service layer
+│   ├── types/              # TypeScript interfaces
+│   ├── App.tsx
+│   ├── index.css
+│   └── main.tsx
+├── server.ts               # Express backend
+├── .env.example
 ├── package.json
+├── vite.config.ts
+├── tsconfig.json
 └── README.md
+
 ```
 
 🔗 **Getting Started**
@@ -146,10 +152,16 @@ Follow these steps to run RepairLens AI locally.
 🔗 **Prerequisites**
 
 Before you begin, make sure you have:
+
 • Node.js 20 or later
+
 • npm or yarn
+
 • A Firebase project
-• Access to the Google AI Studio API
+
+• OpenRouter account
+
+Google AI Studio API Key (optional but recommended for BYOK)
 
 🔗 **Installation**
 
@@ -177,9 +189,28 @@ VITE_FIREBASE_STORAGE_BUCKET=
 VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 
-GEMINI_API_KEY=
+OPENROUTER_API_KEY=
+
+VITE_API_URL=http://localhost:3000
 
 ```
+🔗 **Production Deployment**
+
+Frontend:
+Vercel (or Render)
+
+Backend:
+Render
+
+AI Model:
+Google Gemma 4 31B via OpenRouter
+
+Authentication:
+Firebase Authentication
+
+Database:
+Cloud Firestore
+
 🔗 **Running the Application**
 
 Start the development server.
@@ -257,22 +288,36 @@ A completion screen showing repair progress, achievements, estimated savings, an
 <img width="1366" height="600" alt="Image" src="https://github.com/user-attachments/assets/5c24a214-0211-411f-842c-97bee3bb99ab" />
 
 
+🔗 **Technical Challenges**
+
+During development, several engineering challenges were encountered and resolved:
+
+- Migrated the backend from a local development environment to Render for production deployment.
+- Reconfigured frontend-backend communication after separating deployments.
+- Implemented CORS configuration to securely connect the frontend and backend.
+- Integrated OpenRouter with Google AI Studio BYOK to overcome shared provider rate limits while continuing to use Google's Gemma 4 model.
+- Optimized deployment for free-tier hosting while maintaining a responsive repair workflow.
+
+These improvements strengthened the application's architecture and made the deployment more reliable.
+
 🔗 **Future Improvements**
 
 RepairLens AI has been designed with future expansion in mind. Planned improvements include:
 
 - Support for additional appliance categories.
+- Native mobile application.
 - More languages to improve accessibility.
 - Offline diagnosis for selected repair workflows.
 - Community verified repair guides.
 - Voice guided repair assistance.
+- Spare parts marketplace integration.
 - Predictive maintenance recommendations.
 - Integration with spare parts suppliers.
 - Repair skill tracking and learning progress.
 
 🔗 **Contributors**
 
-This project was developed as part of the **Build with Gemma AI Hackathon 2026.**
+This project was developed for the Google Developer Groups Build with Gemma Hackathon 2026.
 
 🔗 **Team**
 
@@ -292,6 +337,7 @@ We would like to thank the following communities and technologies for supporting
 - Google AI Studio for providing a rapid development environment.
 - Firebase for authentication, database, and storage services.
 - The organizers of the Build with Gemma AI Hackathon 2026 for creating this opportunity.
+- OpenRouter for providing access to Gemma 4 through a unified API.
 - Everyone who tested the prototype and provided valuable feedback.
 
 🔗 **Contact**
